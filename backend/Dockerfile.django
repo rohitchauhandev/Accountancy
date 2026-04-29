@@ -1,0 +1,42 @@
+# ─────────────────────────────────────────────
+# Django Development Dockerfile
+# Multi-tenant Accounting SaaS — Backend
+# ─────────────────────────────────────────────
+FROM python:3.12-slim
+
+# Prevent .pyc files and enable real-time log output
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # PostgreSQL client & build deps for psycopg2
+    postgresql-client \
+    libpq-dev \
+    gcc \
+    python3-dev \
+    # WeasyPrint dependencies (PDF generation)
+    libcairo2 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libgdk-pixbuf-2.0-0 \
+    libffi-dev \
+    # Health checks
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy backend source code
+COPY . .
+
+# Create directories for media uploads and collected static files
+RUN mkdir -p /app/media /app/staticfiles
+
+EXPOSE 8000
+
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
